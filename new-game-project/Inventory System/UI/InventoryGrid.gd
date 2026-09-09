@@ -1,11 +1,19 @@
-extends Node
+extends GridContainer
+
+const WIDTH := 10
+const HEIGHT := 8
+
+@export var slot_scene: PackedScene
 
 
-# Called when the node enters the scene tree for the first time.
-func _ready() -> void:
-	pass # Replace with function body.
+func _ready():
+	create_grid()
 
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
+func create_grid():
+	for child in get_children():
+		child.queue_free()
+
+	for i in range(WIDTH * HEIGHT):
+		var slot = slot_scene.instantiate()
+		add_child(slot)

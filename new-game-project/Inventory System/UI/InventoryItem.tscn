@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://bukxccu3bxajc"]
+
+[ext_resource type="Script" uid="uid://1a0tgjeasmgs" path="res://Inventory System/UI/InventoryItem.gd" id="1_gow26"]
+
+[node name="InventoryItem" type="Control" unique_id=1972141165]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gow26")
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1183121454]
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 64.0
+mouse_filter = 2

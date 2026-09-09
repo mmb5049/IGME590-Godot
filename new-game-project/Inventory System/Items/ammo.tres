@@ -1,9 +1,11 @@
 [gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://bx2kphglid82u"]
 
+[ext_resource type="Texture2D" uid="uid://btunjlcpxwmb5" path="res://Inventory System/Icons/ammo.png" id="1_7lxre"]
 [ext_resource type="Script" uid="uid://cm5cs43ocd7o2" path="res://Inventory System/Items/ItemData.gd" id="1_40kvn"]
 
 [resource]
 script = ExtResource("1_40kvn")
 item_name = "ammo"
+icon = ExtResource("1_7lxre")
 stackable = true
 metadata/_custom_type_script = "uid://cm5cs43ocd7o2"
