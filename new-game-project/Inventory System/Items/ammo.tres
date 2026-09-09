@@ -4,4 +4,6 @@
 
 [resource]
 script = ExtResource("1_40kvn")
+item_name = "ammo"
+stackable = true
 metadata/_custom_type_script = "uid://cm5cs43ocd7o2"
