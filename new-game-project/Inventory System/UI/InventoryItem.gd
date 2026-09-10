@@ -3,7 +3,7 @@ extends Control
 
 @export var item_data: ItemData
 
-const CELL_SIZE := 64
+const CELL_SIZE := 68
 
 var inventory_ui: Control
 var original_position: Vector2
