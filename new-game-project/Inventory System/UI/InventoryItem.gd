@@ -39,20 +39,30 @@ func _get_drag_data(at_position: Vector2):
 	if item_data == null:
 		return null
 
-	# Remember where the item was before dragging.
 	original_position = position
 
 	var drag_data := {
 		"item": self,
-		"item_data": item_data
+		"item_data": item_data,
+		"original_position": position,
+		"original_parent": get_parent(),
+		"offset": at_position # Fixes snapping behavior based on click point
 	}
 
 	# Create the visual drag preview.
 	var preview := duplicate()
-
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	preview.modulate.a = 0.7
-
 	set_drag_preview(preview)
+	
+	# Hide this item temporarily so it doesn't visually clutter the grid
+	visible = false 
 
 	return drag_data
+	
+func _notification(what):
+	# DRAG_END is called automatically by Godot when the drag completes or cancels
+	if what == NOTIFICATION_DRAG_END:
+		if not is_drag_successful():
+			# If the drag failed/canceled outside the inventory, unhide it
+			visible = true 
