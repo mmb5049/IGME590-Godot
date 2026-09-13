@@ -7,6 +7,7 @@ var CELL_PITCH := CELL_SIZE + GRID_GAP
 
 const INVENTORY_WIDTH := 10
 const INVENTORY_HEIGHT := 8
+var currently_dragged_item: InventoryItem = null
 
 @onready var item_layer: Control = $ItemLayer
 
@@ -33,7 +34,7 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 
 	return item_fits(
 		grid_position,
-		item.item_data.grid_size,
+		item.current_grid_size,
 		item
 	)
 	
@@ -57,7 +58,7 @@ func _drop_data(at_position: Vector2, data):
 		floor(at_position.y / CELL_PITCH)
 	)
 
-	if not item_fits(grid_position, item.item_data.grid_size, item):
+	if not item_fits(grid_position, item.current_grid_size, item):
 		_revert_item_placement(item, data)
 		return
 	
@@ -67,7 +68,7 @@ func _drop_data(at_position: Vector2, data):
 		grid_position.y * CELL_PITCH
 	)
 	item.visible = true # <--- MAKE VISIBLE AGAIN
-
+	currently_dragged_item = null
 
 func item_fits(
 	grid_position: Vector2i,
@@ -105,7 +106,7 @@ func item_fits(
 			round(other_item.position.y / CELL_PITCH)
 		)
 
-		var other_size: Vector2i = other_item.item_data.grid_size
+		var other_size: Vector2i = other_item.current_grid_size
 
 		# Check rectangle overlap.
 		if rectangles_overlap(
@@ -143,3 +144,14 @@ func _revert_item_placement(item: InventoryItem, data: Dictionary):
 		original_parent.add_child(item)
 	item.position = data.get("original_position", Vector2.ZERO)
 	item.visible = true # <--- MAKE VISIBLE AGAIN
+	currently_dragged_item = null
+	
+func _input(event):
+	if event is InputEventKey:
+		if event.pressed and not event.echo:
+			if event.keycode == KEY_R:
+				if currently_dragged_item != null:
+					currently_dragged_item.rotate_item()
+		
+func set_dragged_item(item: InventoryItem):
+	currently_dragged_item = item
