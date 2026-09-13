@@ -14,72 +14,47 @@ var drag_preview: Control
 func _ready():
 	if item_data == null:
 		return
+
 	current_grid_size = item_data.grid_size
 	setup_item()
 
 
 func setup_item():
-	size = Vector2(
-		current_grid_size.x * CELL_SIZE,
-		current_grid_size.y * CELL_SIZE
-	)
-
 	var texture_rect := $TextureRect
 
 	if item_data.icon:
 		texture_rect.texture = item_data.icon
 
-	texture_rect.size = size
-	texture_rect.position = Vector2.ZERO
+	texture_rect.size = Vector2(
+		item_data.grid_size.x * CELL_SIZE,
+		item_data.grid_size.y * CELL_SIZE
+	)
 
-	# Rotate around its center.
 	texture_rect.pivot_offset = texture_rect.size / 2.0
-
 	texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	update_visual()
+
+
+func apply_rotation(new_rotation: int):
+	rotation_state = new_rotation % 4
+
+	if rotation_state % 2 == 0:
+		current_grid_size = item_data.grid_size
+	else:
+		current_grid_size = Vector2i(
+			item_data.grid_size.y,
+			item_data.grid_size.x
+		)
+
+	update_visual()
 	
-func rotate_item():
-	rotation_state = (rotation_state + 1) % 4
-
-	# Swap the logical grid dimensions.
-	current_grid_size = Vector2i(
-		current_grid_size.y,
-		current_grid_size.x
-	)
-
-	# Update the item's Control size.
-	size = Vector2(
-		current_grid_size.x * CELL_SIZE,
-		current_grid_size.y * CELL_SIZE
-	)
-
-	var texture_rect := $TextureRect
-
-	# Original visual dimensions before rotation.
-	var original_size = texture_rect.size
-
-	# Rotate around the center instead of the top-left.
-	texture_rect.pivot_offset = original_size / 2.0
-
-	texture_rect.rotation_degrees = rotation_state * 90
-
-	# Keep the center of the visual aligned with the center
-	# of the item's new grid footprint.
-	texture_rect.position = (size / 2.0) - (original_size / 2.0)
-	if drag_preview != null:
-		var preview_texture := drag_preview.get_node("TextureRect")
-
-		preview_texture.pivot_offset = original_size / 2.0
-		preview_texture.rotation_degrees = rotation_state * 90
-
-		drag_preview.size = size
-		preview_texture.position = (size / 2.0) - (original_size / 2.0)
-
 func _get_drag_data(at_position: Vector2):
 	if item_data == null:
 		return null
 
 	original_position = position
-	
+
 	var inventory := get_parent().get_parent()
 
 	if inventory.has_method("set_dragged_item"):
@@ -93,20 +68,35 @@ func _get_drag_data(at_position: Vector2):
 		"offset": at_position
 	}
 
-	# Create the visual drag preview.
+	# Create preview.
 	drag_preview = duplicate()
+
+	# Explicitly copy the current state of the real item.
+	drag_preview.rotation_state = rotation_state
+	drag_preview.current_grid_size = current_grid_size
+
+	# Make sure the preview's visual matches that state.
+	drag_preview.update_visual()
+
 	drag_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	drag_preview.modulate.a = 0.7
 
 	set_drag_preview(drag_preview)
-
 	visible = false
-
 	return drag_data
-	
-func _notification(what):
-	# DRAG_END is called automatically by Godot when the drag completes or cancels
-	if what == NOTIFICATION_DRAG_END:
-		if not is_drag_successful():
-			# If the drag failed/canceled outside the inventory, unhide it
-			visible = true 
+
+
+func update_visual():
+	size = Vector2(
+		current_grid_size.x * CELL_SIZE,
+		current_grid_size.y * CELL_SIZE
+	)
+
+	var texture_rect := $TextureRect
+
+	texture_rect.rotation_degrees = rotation_state * 90
+
+	texture_rect.position = (
+		size / 2.0
+		- texture_rect.size / 2.0
+	)

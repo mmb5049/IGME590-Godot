@@ -10,7 +10,7 @@ const INVENTORY_HEIGHT := 8
 var currently_dragged_item: InventoryItem = null
 
 @onready var item_layer: Control = $ItemLayer
-
+var drop_successful := false
 
 func _can_drop_data(at_position: Vector2, data) -> bool:
 	if not data is Dictionary:
@@ -27,6 +27,9 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 	if item.item_data == null:
 		return false
 
+	if item.drag_preview == null:
+		return false
+
 	var grid_position := Vector2i(
 		floor(at_position.x / CELL_PITCH),
 		floor(at_position.y / CELL_PITCH)
@@ -34,7 +37,7 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 
 	return item_fits(
 		grid_position,
-		item.current_grid_size,
+		item.drag_preview.current_grid_size,
 		item
 	)
 	
@@ -53,22 +56,40 @@ func _drop_data(at_position: Vector2, data):
 	if item == null:
 		return
 
+	var preview := item.drag_preview
+
+	if preview == null:
+		return
+
 	var grid_position := Vector2i(
 		floor(at_position.x / CELL_PITCH),
 		floor(at_position.y / CELL_PITCH)
 	)
 
-	if not item_fits(grid_position, item.current_grid_size, item):
-		_revert_item_placement(item, data)
+	# Validate using the preview's current rotation.
+	if not item_fits(
+		grid_position,
+		preview.current_grid_size,
+		item
+	):
 		return
-	
-	# Snap exactly to the grid layout and make it visible again
+
+	# Apply the preview's rotation to the REAL item.
+	item.apply_rotation(preview.rotation_state)
+
+	# Apply the final position.
 	item.position = Vector2(
 		grid_position.x * CELL_PITCH,
 		grid_position.y * CELL_PITCH
 	)
-	item.visible = true # <--- MAKE VISIBLE AGAIN
+
+	item.visible = true
+
+	item.drag_preview = null
 	currently_dragged_item = null
+
+	# The drop was successful.
+	drop_successful = true
 
 func item_fits(
 	grid_position: Vector2i,
@@ -89,16 +110,16 @@ func item_fits(
 	if grid_position.y + item_size.y > INVENTORY_HEIGHT:
 		return false
 
-	# Check for collisions with other items.
+	# Check collisions with other items.
 	for other_item in item_layer.get_children():
 
 		if not other_item is InventoryItem:
 			continue
-			
+
 		if not other_item.visible:
 			continue
-		
-		if other_item == excluded_item or other_item.get_instance_id() == excluded_item.get_instance_id():
+
+		if other_item == excluded_item:
 			continue
 
 		var other_grid_position := Vector2i(
@@ -108,7 +129,6 @@ func item_fits(
 
 		var other_size: Vector2i = other_item.current_grid_size
 
-		# Check rectangle overlap.
 		if rectangles_overlap(
 			grid_position,
 			item_size,
@@ -138,12 +158,20 @@ func rectangles_overlap(
 	)
 func _revert_item_placement(item: InventoryItem, data: Dictionary):
 	var original_parent = data.get("original_parent", item_layer)
+
 	if item.get_parent() != original_parent:
 		if item.get_parent():
 			item.get_parent().remove_child(item)
+
 		original_parent.add_child(item)
+
 	item.position = data.get("original_position", Vector2.ZERO)
-	item.visible = true # <--- MAKE VISIBLE AGAIN
+
+	# Make the real item visible again.
+	item.visible = true
+
+	# Clear drag state.
+	item.drag_preview = null
 	currently_dragged_item = null
 	
 func _input(event):
@@ -151,7 +179,36 @@ func _input(event):
 		if event.pressed and not event.echo:
 			if event.keycode == KEY_R:
 				if currently_dragged_item != null:
-					currently_dragged_item.rotate_item()
+					rotate_drag_preview()
 		
 func set_dragged_item(item: InventoryItem):
 	currently_dragged_item = item
+	drop_successful = false
+	
+	
+func rotate_drag_preview():
+	var item := currently_dragged_item
+
+	if item == null:
+		return
+
+	var preview := item.drag_preview
+
+	if preview == null:
+		return
+
+	# Rotate the PREVIEW only.
+	var new_rotation: int = (preview.rotation_state + 1) % 4
+
+	preview.apply_rotation(new_rotation)
+	
+func _notification(what):
+	if what == NOTIFICATION_DRAG_END:
+		if currently_dragged_item != null and not drop_successful:
+			var item := currently_dragged_item
+
+			item.position = item.original_position
+			item.visible = true
+			item.drag_preview = null
+
+			currently_dragged_item = null
