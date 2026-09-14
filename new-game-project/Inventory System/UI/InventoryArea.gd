@@ -8,9 +8,18 @@ var CELL_PITCH := CELL_SIZE + GRID_GAP
 const INVENTORY_WIDTH := 10
 const INVENTORY_HEIGHT := 8
 var currently_dragged_item: InventoryItem = null
+const HIGHLIGHT_COLOR_VALID := Color(0.2, 1.0, 0.3, 0.35)
+const HIGHLIGHT_COLOR_INVALID := Color(1.0, 0.2, 0.2, 0.35)
+var current_highlight_grid_position := Vector2i.ZERO
+var highlight_cells: Array[ColorRect] = []
 
-@onready var item_layer: Control = $ItemLayer
 var drop_successful := false
+
+@onready var highlight_layer: Control = $HighlightLayer
+@onready var item_layer: Control = $ItemLayer
+
+func _ready():
+	create_highlight_cells()
 
 func _can_drop_data(at_position: Vector2, data) -> bool:
 	if not data is Dictionary:
@@ -34,12 +43,24 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 		floor(at_position.x / CELL_PITCH),
 		floor(at_position.y / CELL_PITCH)
 	)
+	
+	current_highlight_grid_position = grid_position
 
-	return item_fits(
+	var item_size: Vector2i = item.drag_preview.current_grid_size
+
+	var valid := item_fits(
 		grid_position,
-		item.drag_preview.current_grid_size,
+		item_size,
 		item
-	)
+)
+	update_item_highlight(
+		grid_position,
+		item_size,
+		valid
+)
+
+	return valid
+
 	
 
 
@@ -87,7 +108,8 @@ func _drop_data(at_position: Vector2, data):
 
 	item.drag_preview = null
 	currently_dragged_item = null
-
+	clear_item_highlight()
+	
 	# The drop was successful.
 	drop_successful = true
 
@@ -202,8 +224,23 @@ func rotate_drag_preview():
 
 	preview.apply_rotation(new_rotation)
 	
+	# Immediately update the highlight.
+	var valid := item_fits(
+		current_highlight_grid_position,
+		preview.current_grid_size,
+		item
+	)
+
+	update_item_highlight(
+		current_highlight_grid_position,
+		preview.current_grid_size,
+		valid
+	)
+	
 func _notification(what):
 	if what == NOTIFICATION_DRAG_END:
+		clear_item_highlight()
+
 		if currently_dragged_item != null and not drop_successful:
 			var item := currently_dragged_item
 
@@ -212,3 +249,79 @@ func _notification(what):
 			item.drag_preview = null
 
 			currently_dragged_item = null
+			
+func create_highlight_cells():
+	for cell in highlight_cells:
+		cell.queue_free()
+
+	highlight_cells.clear()
+
+	for y in range(INVENTORY_HEIGHT):
+		for x in range(INVENTORY_WIDTH):
+			var cell := ColorRect.new()
+
+			cell.size = Vector2(
+				CELL_SIZE,
+				CELL_SIZE
+			)
+
+			cell.position = Vector2(
+				x * CELL_PITCH,
+				y * CELL_PITCH
+			)
+
+			cell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			cell.visible = false
+
+			highlight_layer.add_child(cell)
+			highlight_cells.append(cell)
+			
+			
+func update_item_highlight(
+	grid_position: Vector2i,
+	item_size: Vector2i,
+	valid: bool
+):
+	# Hide everything first.
+	for cell in highlight_cells:
+		cell.visible = false
+
+	for y in range(item_size.y):
+		for x in range(item_size.x):
+
+			var cell_position := Vector2i(
+				grid_position.x + x,
+				grid_position.y + y
+			)
+
+			if cell_position.x < 0:
+				continue
+
+			if cell_position.y < 0:
+				continue
+
+			if cell_position.x >= INVENTORY_WIDTH:
+				continue
+
+			if cell_position.y >= INVENTORY_HEIGHT:
+				continue
+
+			var index := (
+				cell_position.y * INVENTORY_WIDTH
+				+ cell_position.x
+			)
+
+			var cell := highlight_cells[index]
+
+			cell.color = (
+				HIGHLIGHT_COLOR_VALID
+				if valid
+				else HIGHLIGHT_COLOR_INVALID
+			)
+
+			cell.visible = true
+			
+			
+func clear_item_highlight():
+	for cell in highlight_cells:
+		cell.visible = false
