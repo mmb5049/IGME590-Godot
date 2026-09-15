@@ -43,7 +43,7 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 		floor(at_position.x / CELL_PITCH),
 		floor(at_position.y / CELL_PITCH)
 	)
-	
+	#print_debug("Preview rotation: ", item.drag_preview.current_grid_size)
 	current_highlight_grid_position = grid_position
 
 	var item_size: Vector2i = item.drag_preview.current_grid_size
@@ -58,14 +58,12 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 		item_size,
 		valid
 )
-
 	return valid
-
-	
 
 
 
 func _drop_data(at_position: Vector2, data):
+	
 	if not data is Dictionary:
 		return
 
@@ -78,7 +76,7 @@ func _drop_data(at_position: Vector2, data):
 		return
 
 	var preview := item.drag_preview
-
+	print_debug("Preview rotation: ", preview.current_grid_size)
 	if preview == null:
 		return
 
@@ -103,6 +101,8 @@ func _drop_data(at_position: Vector2, data):
 		grid_position.x * CELL_PITCH,
 		grid_position.y * CELL_PITCH
 	)
+	
+
 
 	item.visible = true
 

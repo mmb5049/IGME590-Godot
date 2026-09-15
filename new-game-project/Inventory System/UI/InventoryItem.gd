@@ -15,7 +15,9 @@ func _ready():
 	if item_data == null:
 		return
 
-	current_grid_size = item_data.grid_size
+	# Only default to item_data if it hasn't been rotated yet
+	apply_rotation(rotation_state)
+		
 	setup_item()
 
 
@@ -46,8 +48,10 @@ func apply_rotation(new_rotation: int):
 			item_data.grid_size.y,
 			item_data.grid_size.x
 		)
-
+	
 	update_visual()
+	print_debug(current_grid_size)
+	
 	
 func _get_drag_data(at_position: Vector2):
 	if item_data == null:
@@ -74,7 +78,8 @@ func _get_drag_data(at_position: Vector2):
 	# Explicitly copy the current state of the real item.
 	drag_preview.rotation_state = rotation_state
 	drag_preview.current_grid_size = current_grid_size
-
+	print_debug(current_grid_size)
+	
 	# Make sure the preview's visual matches that state.
 	drag_preview.update_visual()
 
