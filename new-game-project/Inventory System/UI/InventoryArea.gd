@@ -24,35 +24,23 @@ func _ready():
 	item_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _can_drop_data(at_position: Vector2, data) -> bool:
-	if not data is Dictionary:
-		return false
-
-	if not data.has("item"):
+	if not data is Dictionary or not data.has("item"):
+		print("FALSE")
 		return false
 
 	var item: InventoryItem = data["item"]
-
-	if item == null:
+	if item == null or item.item_data == null or item.drag_preview == null:
+		print("FALSE")
 		return false
-
-	if item.item_data == null:
-		return false
-
-	if item.drag_preview == null:
-		return false
-		
-	print("CAN DROP POSITION: ", at_position)
 
 	var grid_position := Vector2i(
 		floor(at_position.x / CELL_PITCH),
 		floor(at_position.y / CELL_PITCH)
 	)
-	#print_debug("Preview rotation: ", item.drag_preview.current_grid_size)
 	current_highlight_grid_position = grid_position
 
-	var item_size: Vector2i = item.drag_preview.current_grid_size
+	# 1. Check if we are hovering over a valid stack target
 	var stack_target := get_item_at_cell(grid_position, item)
-	print(item)
 	print(stack_target)
 	if can_stack_onto(stack_target, item):
 		var target_cell := Vector2i(
@@ -61,19 +49,13 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 		)
 		update_item_highlight(target_cell, stack_target.current_grid_size, true)
 		return true
-		
-	var valid := item_fits(
-		grid_position,
-		item_size,
-		item
-)
-	update_item_highlight(
-		grid_position,
-		item_size,
-		valid
-)
-	return valid
 
+	# 2. Otherwise, check standard placement fit
+	var item_size: Vector2i = item.drag_preview.current_grid_size
+	var valid := item_fits(grid_position, item_size, item)
+	
+	update_item_highlight(grid_position, item_size, valid)
+	return valid
 
 
 func _drop_data(at_position: Vector2, data):
@@ -365,46 +347,22 @@ func clear_item_highlight():
 		
 		
 func get_item_at_cell(cell: Vector2i, exclude: InventoryItem = null) -> InventoryItem:
-	print("========== GET ITEM ==========")
-	print("Mouse cell: ", cell)
-	print("Dragged item: ", exclude.item_data.item_name)
-	print("Dragged size: ", exclude.current_grid_size)
-
 	for other in item_layer.get_children():
-		if not other is InventoryItem:
+		if not other is InventoryItem or not other.visible or other == exclude:
 			continue
 
-		if not other.visible:
-			continue
-
-		if other == exclude:
-			continue
-
+		# Use floor to ensure consistent integer grid mapping with cell coordinates
 		var other_pos := Vector2i(
-			round(other.position.x / CELL_PITCH),
-			round(other.position.y / CELL_PITCH)
+			floor(other.position.x / CELL_PITCH),
+			floor(other.position.y / CELL_PITCH)
 		)
-
 		var other_size: Vector2i = other.current_grid_size
-		
-		print("--- Other item ---")
-		print("Name: ", other.item_data.item_name)
-		print("Pixel position: ", other.position)
-		print("Grid position: ", other_pos)
-		print("Grid size: ", other.current_grid_size)
-		print("Overlap: ", rectangles_overlap(
-			cell,
-			exclude.current_grid_size,
-			other_pos,
-			other.current_grid_size
-		))
 
-		# Check whether the mouse cell is inside this item.
-		if cell.x >= other_pos.x \
-		and cell.x < other_pos.x + other_size.x \
-		and cell.y >= other_pos.y \
-		and cell.y < other_pos.y + other_size.y:
+		# Check if the target cell falls anywhere within the item's grid bounds
+		if cell.x >= other_pos.x and cell.x < (other_pos.x + other_size.x) \
+		and cell.y >= other_pos.y and cell.y < (other_pos.y + other_size.y):
 			return other
+
 	return null
 
 

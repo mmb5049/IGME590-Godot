@@ -41,7 +41,6 @@ custom_minimum_size = Vector2(384, 320)
 anchors_preset = 0
 offset_right = 675.0
 offset_bottom = 540.0
-mouse_filter = 2
 
 [node name="HighlightLayer" type="Control" parent="Panel/InventoryArea" unique_id=408172550]
 layout_mode = 1

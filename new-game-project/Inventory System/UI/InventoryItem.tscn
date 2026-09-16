@@ -5,6 +5,7 @@
 [node name="InventoryItem" type="Control" unique_id=1972141165]
 layout_mode = 3
 anchors_preset = 0
+mouse_filter = 1
 script = ExtResource("1_gow26")
 
 [node name="TextureRect" type="TextureRect" parent="." unique_id=1183121454]
