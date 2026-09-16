@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://b5iay0ua0o4t4"]
+
+[ext_resource type="Script" uid="uid://cm5cs43ocd7o2" path="res://Inventory System/Items/ItemData.gd" id="1_2whit"]
+[ext_resource type="Texture2D" uid="uid://bidn70gfy37p3" path="res://Inventory System/Icons/medkit.png" id="1_l4uaf"]
+
+[resource]
+script = ExtResource("1_2whit")
+item_name = "medkit"
+icon = ExtResource("1_l4uaf")
+stackable = true
+max_stack = 5
+consumable = true
+metadata/_custom_type_script = "uid://cm5cs43ocd7o2"

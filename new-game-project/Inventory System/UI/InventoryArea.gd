@@ -7,11 +7,18 @@ var CELL_PITCH := CELL_SIZE + GRID_GAP
 
 const INVENTORY_WIDTH := 10
 const INVENTORY_HEIGHT := 8
+
 var currently_dragged_item: InventoryItem = null
 const HIGHLIGHT_COLOR_VALID := Color(0.2, 1.0, 0.3, 0.35)
 const HIGHLIGHT_COLOR_INVALID := Color(1.0, 0.2, 0.2, 0.35)
 var current_highlight_grid_position := Vector2i.ZERO
 var highlight_cells: Array[ColorRect] = []
+
+var item_context_menu: PopupMenu
+var context_menu_item: InventoryItem = null
+
+const MENU_SPLIT := 0
+const MENU_CONSUME := 1
 
 var drop_successful := false
 
@@ -22,6 +29,7 @@ func _ready():
 	create_highlight_cells()
 	highlight_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	item_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	create_item_context_menu()
 
 func _can_drop_data(at_position: Vector2, data) -> bool:
 	if not data is Dictionary or not data.has("item"):
@@ -376,3 +384,145 @@ func can_stack_onto(target: InventoryItem, item: InventoryItem) -> bool:
 	if target.item_data != item.item_data:
 		return false
 	return target.quantity < target.item_data.max_stack
+	
+func create_item_context_menu():
+	item_context_menu = PopupMenu.new()
+
+	item_context_menu.add_item("Split", MENU_SPLIT)
+	item_context_menu.add_item("Consume", MENU_CONSUME)
+
+	item_context_menu.id_pressed.connect(_on_context_menu_pressed)
+
+	add_child(item_context_menu)
+
+	item_context_menu.hide()
+
+
+func _on_context_menu_pressed(id: int):
+	if context_menu_item == null:
+		return
+
+	var item := context_menu_item
+	context_menu_item = null
+
+	match id:
+		MENU_SPLIT:
+			split_item(item)
+
+		MENU_CONSUME:
+			consume_item(item)
+			
+			
+func show_item_context_menu(item: InventoryItem):
+	if item == null or item.item_data == null:
+		return
+
+	context_menu_item = item
+
+	item_context_menu.clear()
+
+	# Split
+	if item.item_data.stackable and item.quantity > 1:
+		item_context_menu.add_item("Split", MENU_SPLIT)
+
+	# Consume
+	if item.item_data.consumable:
+		item_context_menu.add_item("Consume", MENU_CONSUME)
+
+	# Don't show an empty menu.
+	if item_context_menu.item_count == 0:
+		context_menu_item = null
+		return
+
+	var mouse_position := get_global_mouse_position()
+
+	item_context_menu.position = Vector2i(mouse_position)
+	item_context_menu.popup()
+	
+	
+func split_item(item: InventoryItem):
+	if item == null:
+		return
+
+	if item.item_data == null:
+		return
+
+	if not item.item_data.stackable:
+		return
+
+	if item.quantity <= 1:
+		return
+
+	var split_quantity := item.quantity / 2
+	var remaining_quantity := item.quantity - split_quantity
+
+	# Find an empty space in the inventory.
+	var empty_position := find_empty_position(item.current_grid_size)
+
+	if empty_position == Vector2i(-1, -1):
+		print("No room to split stack.")
+		return
+
+	# Keep the original item with the remaining quantity.
+	item.quantity = remaining_quantity
+
+	# Create the new half.
+	var new_item := item.duplicate()
+
+	new_item.quantity = split_quantity
+	new_item.rotation_state = item.rotation_state
+	new_item.current_grid_size = item.current_grid_size
+	new_item.position = Vector2(
+		empty_position.x * CELL_PITCH,
+		empty_position.y * CELL_PITCH
+	)
+
+	new_item.visible = true
+	new_item.drag_preview = null
+
+	item_layer.add_child(new_item)
+
+	new_item.setup_item()
+	new_item.apply_rotation(item.rotation_state)
+
+	print(
+		"Split ",
+		item.item_data.item_name,
+		": ",
+		remaining_quantity,
+		" + ",
+		split_quantity
+	)
+	
+func find_empty_position(item_size: Vector2i) -> Vector2i:
+	for y in range(INVENTORY_HEIGHT):
+		for x in range(INVENTORY_WIDTH):
+
+			var position := Vector2i(x, y)
+
+			if item_fits(position, item_size):
+				return position
+
+	return Vector2i(-1, -1)
+	
+func consume_item(item: InventoryItem):
+	if item == null:
+		return
+
+	if item.item_data == null:
+		return
+
+	if not item.item_data.consumable:
+		return
+
+	# TODO:
+	# Apply the item's actual gameplay effect here.
+	# Example:
+	# player.heal(item.item_data.heal_amount)
+
+	item.quantity -= 1
+
+	if item.quantity <= 0:
+		item.queue_free()
+
+	print("Consumed: ", item.item_data.item_name)

@@ -115,6 +115,7 @@ func update_visual():
 
 func update_count_label():
 	var label := get_node_or_null("CountLabel")
+	print(label)
 	if label == null:
 		return
 	if item_data != null and item_data.stackable and quantity > 1:
@@ -122,3 +123,13 @@ func update_count_label():
 		label.visible = true
 	else:
 		label.visible = false
+		
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			var inventory := get_parent().get_parent()
+
+			if inventory.has_method("show_item_context_menu"):
+				inventory.show_item_context_menu(self)
+
+			accept_event()
