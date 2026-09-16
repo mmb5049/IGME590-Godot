@@ -10,4 +10,5 @@ icon = ExtResource("1_l4uaf")
 stackable = true
 max_stack = 5
 consumable = true
+consume_effect = 1
 metadata/_custom_type_script = "uid://cm5cs43ocd7o2"
