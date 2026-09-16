@@ -47,7 +47,15 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 	current_highlight_grid_position = grid_position
 
 	var item_size: Vector2i = item.drag_preview.current_grid_size
-
+	var stack_target := get_item_at_cell(grid_position, item)
+	if can_stack_onto(stack_target, item):
+		var target_cell := Vector2i(
+			round(stack_target.position.x / CELL_PITCH),
+			round(stack_target.position.y / CELL_PITCH)
+		)
+		update_item_highlight(target_cell, stack_target.current_grid_size, true)
+		return true
+		
 	var valid := item_fits(
 		grid_position,
 		item_size,
@@ -76,7 +84,6 @@ func _drop_data(at_position: Vector2, data):
 		return
 
 	var preview := item.drag_preview
-	print_debug("Preview rotation: ", preview.current_grid_size)
 	if preview == null:
 		return
 
@@ -84,6 +91,27 @@ func _drop_data(at_position: Vector2, data):
 		floor(at_position.x / CELL_PITCH),
 		floor(at_position.y / CELL_PITCH)
 	)
+	
+	var stack_target := get_item_at_cell(grid_position, item)
+	if can_stack_onto(stack_target, item):
+		var space: int = stack_target.item_data.max_stack - stack_target.quantity
+		var moved: int = min(space, item.quantity)
+
+		stack_target.quantity += moved
+		item.quantity -= moved
+
+		currently_dragged_item = null
+		clear_item_highlight()
+		drop_successful = true
+
+		if item.quantity <= 0:
+			item.queue_free()
+		else:
+			# Partial merge: the remainder snaps back where it came from.
+			item.position = item.original_position
+			item.visible = true
+			item.drag_preview = null
+		return
 
 	# Validate using the preview's current rotation.
 	if not item_fits(
@@ -325,3 +353,30 @@ func update_item_highlight(
 func clear_item_highlight():
 	for cell in highlight_cells:
 		cell.visible = false
+		
+		
+func get_item_at_cell(cell: Vector2i, exclude: InventoryItem = null) -> InventoryItem:
+	for other in item_layer.get_children():
+		if not other is InventoryItem:
+			continue
+		if other == exclude or not other.visible:
+			continue
+		var other_pos := Vector2i(
+			round(other.position.x / CELL_PITCH),
+			round(other.position.y / CELL_PITCH)
+		)
+		if rectangles_overlap(cell, Vector2i.ONE, other_pos, other.current_grid_size):
+			return other
+	return null
+
+
+func can_stack_onto(target: InventoryItem, item: InventoryItem) -> bool:
+	if target == null or item == null or target == item:
+		return false
+	if item.item_data == null or target.item_data == null:
+		return false
+	if not item.item_data.stackable:
+		return false
+	if target.item_data != item.item_data:
+		return false
+	return target.quantity < target.item_data.max_stack

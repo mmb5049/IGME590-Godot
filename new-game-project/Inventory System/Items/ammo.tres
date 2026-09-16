@@ -8,4 +8,5 @@ script = ExtResource("1_40kvn")
 item_name = "ammo"
 icon = ExtResource("1_7lxre")
 stackable = true
+max_stack = 10
 metadata/_custom_type_script = "uid://cm5cs43ocd7o2"
