@@ -11,6 +11,7 @@ var rotation_state := 0
 var current_grid_size: Vector2i
 var drag_preview: Control
 var quantity: int = 1:
+
 	set(value):
 		quantity = value
 		update_count_label()

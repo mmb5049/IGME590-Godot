@@ -20,6 +20,8 @@ var drop_successful := false
 
 func _ready():
 	create_highlight_cells()
+	highlight_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	item_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _can_drop_data(at_position: Vector2, data) -> bool:
 	if not data is Dictionary:
@@ -38,6 +40,8 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 
 	if item.drag_preview == null:
 		return false
+		
+	print("CAN DROP POSITION: ", at_position)
 
 	var grid_position := Vector2i(
 		floor(at_position.x / CELL_PITCH),
@@ -48,6 +52,8 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 
 	var item_size: Vector2i = item.drag_preview.current_grid_size
 	var stack_target := get_item_at_cell(grid_position, item)
+	print(item)
+	print(stack_target)
 	if can_stack_onto(stack_target, item):
 		var target_cell := Vector2i(
 			round(stack_target.position.x / CELL_PITCH),
@@ -86,6 +92,9 @@ func _drop_data(at_position: Vector2, data):
 	var preview := item.drag_preview
 	if preview == null:
 		return
+		
+	print("MOUSE POSITION: ", at_position)
+
 
 	var grid_position := Vector2i(
 		floor(at_position.x / CELL_PITCH),
@@ -356,16 +365,45 @@ func clear_item_highlight():
 		
 		
 func get_item_at_cell(cell: Vector2i, exclude: InventoryItem = null) -> InventoryItem:
+	print("========== GET ITEM ==========")
+	print("Mouse cell: ", cell)
+	print("Dragged item: ", exclude.item_data.item_name)
+	print("Dragged size: ", exclude.current_grid_size)
+
 	for other in item_layer.get_children():
 		if not other is InventoryItem:
 			continue
-		if other == exclude or not other.visible:
+
+		if not other.visible:
 			continue
+
+		if other == exclude:
+			continue
+
 		var other_pos := Vector2i(
 			round(other.position.x / CELL_PITCH),
 			round(other.position.y / CELL_PITCH)
 		)
-		if rectangles_overlap(cell, Vector2i.ONE, other_pos, other.current_grid_size):
+
+		var other_size: Vector2i = other.current_grid_size
+		
+		print("--- Other item ---")
+		print("Name: ", other.item_data.item_name)
+		print("Pixel position: ", other.position)
+		print("Grid position: ", other_pos)
+		print("Grid size: ", other.current_grid_size)
+		print("Overlap: ", rectangles_overlap(
+			cell,
+			exclude.current_grid_size,
+			other_pos,
+			other.current_grid_size
+		))
+
+		# Check whether the mouse cell is inside this item.
+		if cell.x >= other_pos.x \
+		and cell.x < other_pos.x + other_size.x \
+		and cell.y >= other_pos.y \
+		and cell.y < other_pos.y + other_size.y:
 			return other
 	return null
 
