@@ -35,6 +35,8 @@ var item_scene: PackedScene = preload(
 	"res://Inventory System/UI/InventoryItem.tscn"
 )
 
+var active_drag_data: Dictionary = {}
+
 func _ready():
 	create_highlight_cells()
 	highlight_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -45,18 +47,26 @@ func _can_drop_data(at_position: Vector2, data) -> bool:
 	if not data is Dictionary or not data.has("item"):
 		print("FALSE")
 		return false
+		
+	
 
 	var item: InventoryItem = data["item"]
 	if item == null or item.item_data == null or item.drag_preview == null:
 		print("FALSE")
 		return false
 
+	
+	active_drag_data = data 
+	# Get the click offset from the drag data dictionary
+	var click_offset: Vector2 = data.get("offset", Vector2.ZERO)
+	
+	# Calculate grid position based on the top-left corner of the item box instead of the mouse tip
+	var item_top_left := at_position - click_offset + Vector2(34,32)
 	var grid_position := Vector2i(
-		floor(at_position.x / CELL_PITCH),
-		floor(at_position.y / CELL_PITCH)
+		floor(item_top_left.x / CELL_PITCH),
+		floor(item_top_left.y / CELL_PITCH)
 	)
 	current_highlight_grid_position = grid_position
-
 	# 1. Check if we are hovering over a valid stack target
 	var stack_target := get_item_at_cell(grid_position, item)
 	print(stack_target)
@@ -96,9 +106,14 @@ func _drop_data(at_position: Vector2, data):
 	print("MOUSE POSITION: ", at_position)
 
 
+	# Get the click offset from the drag data dictionary
+	var click_offset: Vector2 = data.get("offset", Vector2.ZERO)
+
+	# Calculate final grid position based on the top-left corner of the item box
+	var item_top_left := at_position - click_offset + Vector2(34,32)
 	var grid_position := Vector2i(
-		floor(at_position.x / CELL_PITCH),
-		floor(at_position.y / CELL_PITCH)
+		floor(item_top_left.x / CELL_PITCH),
+		floor(item_top_left.y / CELL_PITCH)
 	)
 	
 	var stack_target := get_item_at_cell(grid_position, item)
@@ -257,25 +272,32 @@ func _input(event):
 func set_dragged_item(item: InventoryItem):
 	currently_dragged_item = item
 	drop_successful = false
+
 	
 	
 func rotate_drag_preview():
 	var item := currently_dragged_item
-
 	if item == null:
 		return
 
 	var preview := item.drag_preview
-
 	if preview == null:
 		return
 
-	# Rotate the PREVIEW only.
+	# 1. Rotate the preview layout properties
 	var new_rotation: int = (preview.rotation_state + 1) % 4
-
 	preview.apply_rotation(new_rotation)
 	
-	# Immediately update the highlight.
+	# 2. FIX: Access the active_drag_data DICTIONARY, not the item node
+	if active_drag_data.has("offset"):
+		var old_offset: Vector2 = active_drag_data["offset"]
+		var new_offset: Vector2 = preview.rotate_offset_90_degrees(old_offset)
+		
+		# Update both the internal coordinate mapping and the visual placement
+		active_drag_data["offset"] = new_offset
+		preview.position = -new_offset
+	
+	# 3. Immediately update the highlight grid
 	var valid := item_fits(
 		current_highlight_grid_position,
 		preview.current_grid_size,
@@ -287,6 +309,7 @@ func rotate_drag_preview():
 		preview.current_grid_size,
 		valid
 	)
+
 	
 func _notification(what):
 	if what == NOTIFICATION_DRAG_END:

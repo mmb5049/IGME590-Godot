@@ -67,7 +67,9 @@ func _get_drag_data(at_position: Vector2):
 
 	if inventory.has_method("set_dragged_item"):
 		inventory.set_dragged_item(self)
-
+	
+	
+	
 	var drag_data := {
 		"item": self,
 		"item_data": item_data,
@@ -76,7 +78,11 @@ func _get_drag_data(at_position: Vector2):
 		"offset": at_position
 	}
 
-	# Create preview.
+	# 1. Create the empty parent container
+	var preview_container := Control.new()
+	preview_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# 2. Duplicate the item as the visual child
 	drag_preview = duplicate()
 
 	# Explicitly copy the current state of the real item.
@@ -84,14 +90,19 @@ func _get_drag_data(at_position: Vector2):
 	drag_preview.current_grid_size = current_grid_size
 	drag_preview.quantity = quantity
 	
+	# 3. Apply the negative offset to the CHILD node, NOT the container
+	drag_preview.position = -at_position
+	
 	# Make sure the preview's visual matches that state.
 	drag_preview.update_visual()
-
 	drag_preview.update_count_label()
 	drag_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	drag_preview.modulate.a = 0.7
 
-	set_drag_preview(drag_preview)
+	# 4. Nest the child into the container and set the container as the preview
+	preview_container.add_child(drag_preview)
+	set_drag_preview(preview_container)
+	
 	visible = false
 	return drag_data
 
@@ -133,3 +144,16 @@ func _gui_input(event: InputEvent) -> void:
 				inventory.show_item_context_menu(self)
 
 			accept_event()
+			
+			
+func rotate_offset_90_degrees(old_offset: Vector2) -> Vector2:
+	# Use item_data.grid_size here because the texture size is calculated from unrotated sizes
+	var half_size := Vector2(item_data.grid_size.x * CELL_SIZE, item_data.grid_size.y * CELL_SIZE) / 2.0
+	var local_centered := old_offset - half_size
+	
+	# Clockwise 90-degree 2D rotation matrix math: (x, y) -> (-y, x)
+	var rotated_centered := Vector2(local_centered.y, local_centered.x)
+	
+	# The new center changes because the grid dimensions swapped!
+	var new_half_size := Vector2(current_grid_size.x * CELL_SIZE, current_grid_size.y * CELL_SIZE) / 2.0
+	return rotated_centered + new_half_size
