@@ -284,28 +284,56 @@ func rotate_drag_preview():
 	if preview == null:
 		return
 
-	# 1. Rotate the preview layout properties
+	# Save the dimensions BEFORE rotation.
+	var old_size: Vector2i = preview.current_grid_size
+
+	# Save the mouse's position inside the item BEFORE rotation.
+	var old_offset: Vector2 = active_drag_data.get("offset", Vector2.ZERO)
+
+	# Rotate the preview.
 	var new_rotation: int = (preview.rotation_state + 1) % 4
 	preview.apply_rotation(new_rotation)
+
+	# Calculate where that SAME mouse point should be
+	# inside the newly rotated item.
+	var new_offset : Vector2 = preview.rotate_offset_90_degrees(
+		old_offset,
+		old_size
+	)
+
+	# Save the new offset.
+	active_drag_data["offset"] = new_offset
+
+	# Keep the same point of the gun underneath the mouse.
+	preview.position = -new_offset
+
+
+	# UPDATE HIGHLIGHT IMMEDIATELY
 	
-	# 2. FIX: Access the active_drag_data DICTIONARY, not the item node
-	if active_drag_data.has("offset"):
-		var old_offset: Vector2 = active_drag_data["offset"]
-		var new_offset: Vector2 = preview.rotate_offset_90_degrees(old_offset)
-		
-		# Update both the internal coordinate mapping and the visual placement
-		active_drag_data["offset"] = new_offset
-		preview.position = -new_offset
-	
-	# 3. Immediately update the highlight grid
+	var mouse_position := get_global_mouse_position()
+
+	# Convert mouse position to inventory coordinates
+	var at_position := mouse_position - global_position
+
+	# Use the same calculation you use while dragging
+	var item_top_left := at_position - new_offset + Vector2(34, 32)
+
+	var new_grid_position := Vector2i(
+		floor(item_top_left.x / CELL_PITCH),
+		floor(item_top_left.y / CELL_PITCH)
+	)
+
+	current_highlight_grid_position = new_grid_position
+
+	# Check using the NEW rotated size
 	var valid := item_fits(
-		current_highlight_grid_position,
+		new_grid_position,
 		preview.current_grid_size,
 		item
 	)
 
 	update_item_highlight(
-		current_highlight_grid_position,
+		new_grid_position,
 		preview.current_grid_size,
 		valid
 	)

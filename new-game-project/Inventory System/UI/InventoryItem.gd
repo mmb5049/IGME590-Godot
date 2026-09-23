@@ -146,14 +146,15 @@ func _gui_input(event: InputEvent) -> void:
 			accept_event()
 			
 			
-func rotate_offset_90_degrees(old_offset: Vector2) -> Vector2:
-	# Use item_data.grid_size here because the texture size is calculated from unrotated sizes
-	var half_size := Vector2(item_data.grid_size.x * CELL_SIZE, item_data.grid_size.y * CELL_SIZE) / 2.0
-	var local_centered := old_offset - half_size
-	
-	# Clockwise 90-degree 2D rotation matrix math: (x, y) -> (-y, x)
-	var rotated_centered := Vector2(local_centered.y, local_centered.x)
-	
-	# The new center changes because the grid dimensions swapped!
-	var new_half_size := Vector2(current_grid_size.x * CELL_SIZE, current_grid_size.y * CELL_SIZE) / 2.0
-	return rotated_centered + new_half_size
+func rotate_offset_90_degrees(
+	old_offset: Vector2,
+	old_size: Vector2i
+) -> Vector2:
+
+	var old_width := old_size.x * CELL_SIZE
+	var old_height := old_size.y * CELL_SIZE
+
+	return Vector2(
+		old_height - old_offset.y,
+		old_offset.x
+	)
