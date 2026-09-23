@@ -24,6 +24,16 @@ var drop_successful := false
 
 @onready var highlight_layer: Control = $HighlightLayer
 @onready var item_layer: Control = $ItemLayer
+@onready var message_label: Label = $MessageLabel
+
+var handgun_data: ItemData = preload("res://Inventory System/Items/handgun.tres")
+var shotgun_data: ItemData = preload("res://Inventory System/Items/shotgun.tres")
+var ammo_data: ItemData = preload("res://Inventory System/Items/ammo.tres")
+var medkit_data: ItemData = preload("res://Inventory System/Items/medkit.tres")
+
+var item_scene: PackedScene = preload(
+	"res://Inventory System/UI/InventoryItem.tscn"
+)
 
 func _ready():
 	create_highlight_cells()
@@ -140,6 +150,9 @@ func _drop_data(at_position: Vector2, data):
 	# The drop was successful.
 	drop_successful = true
 
+
+
+
 func item_fits(
 	grid_position: Vector2i,
 	item_size: Vector2i,
@@ -229,6 +242,17 @@ func _input(event):
 			if event.keycode == KEY_R:
 				if currently_dragged_item != null:
 					rotate_drag_preview()
+			elif event.keycode == KEY_H:
+				spawn_item(handgun_data, 1)
+
+			elif event.keycode == KEY_S:
+				spawn_item(shotgun_data, 1)
+
+			elif event.keycode == KEY_A:
+				spawn_item(ammo_data, 10)
+
+			elif event.keycode == KEY_M:
+				spawn_item(medkit_data, 1)
 		
 func set_dragged_item(item: InventoryItem):
 	currently_dragged_item = item
@@ -515,10 +539,6 @@ func consume_item(item: InventoryItem):
 	if not item.item_data.consumable:
 		return
 
-	# TODO:
-	# Apply the item's actual gameplay effect here.
-	# Example:
-	# player.heal(item.item_data.heal_amount)
 
 	item.quantity -= 1
 
@@ -526,3 +546,49 @@ func consume_item(item: InventoryItem):
 		item.queue_free()
 
 	print("Consumed: ", item.item_data.item_name)
+
+
+func spawn_item(item_data: ItemData, quantity: int = 1):
+	if item_data == null:
+		return
+
+	# Find an empty position for a new item.
+	var empty_position := find_empty_position(item_data.grid_size)
+
+	if empty_position == Vector2i(-1, -1):
+		show_inventory_message(
+			"No room for %s!" % item_data.item_name
+		)
+		return
+
+	# Create the item.
+	var new_item := item_scene.instantiate() as InventoryItem
+
+	new_item.item_data = item_data
+	new_item.quantity = quantity
+
+	item_layer.add_child(new_item)
+
+	# Position it on the grid.
+	new_item.position = Vector2(
+		empty_position.x * CELL_PITCH,
+		empty_position.y * CELL_PITCH
+	)
+
+	# Make sure the quantity display updates.
+	new_item.update_count_label()
+
+	show_inventory_message("Spawned %s" % item_data.item_name)
+	
+
+
+
+func show_inventory_message(message: String):
+	message_label.text = message
+	message_label.visible = true
+
+	await get_tree().create_timer(2.0).timeout
+
+	# Don't erase a newer message.
+	if message_label.text == message:
+		message_label.visible = false
