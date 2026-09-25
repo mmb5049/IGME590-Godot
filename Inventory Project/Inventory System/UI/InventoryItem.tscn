@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://bukxccu3bxajc"]
+
+[ext_resource type="Script" uid="uid://1a0tgjeasmgs" path="res://Inventory System/UI/InventoryItem.gd" id="1_gow26"]
+
+[node name="InventoryItem" type="Control" unique_id=1972141165]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 1
+script = ExtResource("1_gow26")
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=1183121454]
+layout_mode = 1
+offset_right = 64.0
+offset_bottom = 64.0
+mouse_filter = 2
+
+[node name="CountLabel" type="Label" parent="." unique_id=1154427828]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -14.0
+offset_top = -23.0
+grow_horizontal = 0
+grow_vertical = 0

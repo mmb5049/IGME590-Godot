@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://bv5qmfecuwm15"]
+
+[ext_resource type="Script" uid="uid://cm5cs43ocd7o2" path="res://Inventory System/Items/ItemData.gd" id="1_4e0lm"]
+[ext_resource type="Texture2D" uid="uid://bhwq0lg5doh8c" path="res://Inventory System/Icons/handgun.png" id="1_qdnno"]
+
+[resource]
+script = ExtResource("1_4e0lm")
+item_name = "handgun"
+icon = ExtResource("1_qdnno")
+grid_size = Vector2i(3, 2)
+metadata/_custom_type_script = "uid://cm5cs43ocd7o2"

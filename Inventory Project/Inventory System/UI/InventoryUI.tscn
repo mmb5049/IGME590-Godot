@@ -1,0 +1,59 @@
+[gd_scene format=3 uid="uid://gn8ru0604w7q"]
+
+[ext_resource type="Script" uid="uid://b4smo1igegr58" path="res://Inventory System/UI/InventoryGrid.gd" id="1_hcvf3"]
+[ext_resource type="Script" uid="uid://d4k64s2of33op" path="res://Inventory System/UI/InventoryUI.gd" id="1_ukg6l"]
+[ext_resource type="PackedScene" uid="uid://bqkie70e4vs15" path="res://Inventory System/UI/InventorySlot.tscn" id="2_3c71x"]
+[ext_resource type="Script" uid="uid://52cmuqq8h32o" path="res://Inventory System/UI/InventoryArea.gd" id="2_cd0ut"]
+
+[node name="InventoryUI" type="Control" unique_id=1466067273]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ukg6l")
+
+[node name="Panel" type="Panel" parent="." unique_id=1026316759]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 1
+offset_right = 1154.0
+offset_bottom = 651.0
+
+[node name="InventoryArea" type="Control" parent="Panel" unique_id=829584885]
+anchors_preset = 0
+offset_right = 675.0
+offset_bottom = 540.0
+script = ExtResource("2_cd0ut")
+
+[node name="GridContainer" type="GridContainer" parent="Panel/InventoryArea" unique_id=1537716477]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 0
+offset_right = 1148.0
+offset_bottom = 645.0
+mouse_filter = 2
+columns = 10
+script = ExtResource("1_hcvf3")
+slot_scene = ExtResource("2_3c71x")
+
+[node name="ItemLayer" type="Control" parent="Panel/InventoryArea" unique_id=1072745018]
+custom_minimum_size = Vector2(384, 320)
+anchors_preset = 0
+offset_right = 675.0
+offset_bottom = 540.0
+
+[node name="HighlightLayer" type="Control" parent="Panel/InventoryArea" unique_id=408172550]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MessageLabel" type="Label" parent="Panel/InventoryArea" unique_id=1494150826]
+layout_mode = 0
+offset_left = 981.0
+offset_top = 4.0
+offset_right = 1106.0
+offset_bottom = 96.0
